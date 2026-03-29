@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>共有メモ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #fafaf8;
+      --surface: #f3f2ef;
+      --border: rgba(0,0,0,0.10);
+      --border-md: rgba(0,0,0,0.18);
+      --text: #1a1a18;
+      --text-2: #6b6a65;
+      --text-3: #aaa99f;
+      --accent: #1D9E75;
+      --accent-light: #e1f5ee;
+      --danger: #A32D2D;
+      --danger-light: #FCEBEB;
+      --warn: #BA7517;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #18181a;
+        --surface: #222224;
+        --border: rgba(255,255,255,0.09);
+        --border-md: rgba(255,255,255,0.16);
+        --text: #f0ede8;
+        --text-2: #9e9c97;
+        --text-3: #5e5d59;
+        --accent-light: #04342C;
+        --danger-light: #501313;
+      }
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', 'Hiragino Sans', sans-serif; }
+
+    body { display: flex; flex-direction: column; }
+
+    header {
+      padding: 0 24px;
+      height: 52px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .logo { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
+    .logo span { color: var(--accent); }
+
+    .user-row { display: flex; align-items: center; gap: 8px; }
+    .user-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    #username-input {
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius);
+      padding: 5px 10px;
+      font-size: 13px;
+      background: var(--surface);
+      color: var(--text);
+      width: 130px;
+    }
+    #username-input:focus { outline: none; border-color: var(--accent); }
+
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #sidebar {
+      width: 240px;
+      border-right: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    #search-wrap { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
+    #search {
+      width: 100%;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    #search:focus { outline: none; border-color: var(--accent); }
+    #search::placeholder { color: var(--text-3); }
+
+    #new-btn {
+      margin: 10px 14px 6px;
+      width: calc(100% - 28px);
+      background: none;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+      text-align: left;
+      transition: background 0.15s;
+    }
+    #new-btn:hover { background: var(--bg); }
+
+    #note-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .note-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-radius: 7px;
+      margin: 2px 6px;
+      transition: background 0.12s;
+    }
+    .note-item:hover { background: var(--bg); }
+    .note-item.active { background: var(--bg); border: 0.5px solid var(--border); }
+    .note-title-li { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .note-meta { font-size: 10px; color: var(--text-3); margin-top: 3px; display: flex; justify-content: space-between; }
+
+    #editor { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+    #editor-top {
+      padding: 14px 24px 12px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #title-input {
+      border: none;
+      outline: none;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      background: transparent;
+      flex: 1;
+      min-width: 0;
+      letter-spacing: -0.02em;
+    }
+    #title-input::placeholder { color: var(--text-3); font-weight: 400; }
+
+    #delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-3);
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      transition: background 0.12s, color 0.12s;
+      flex-shrink: 0;
+    }
+    #delete-btn:hover { color: var(--danger); background: var(--danger-light); }
+
+    #body-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 20px 24px;
+      font-size: 14px;
+      line-height: 1.9;
+      color: var(--text);
+      background: transparent;
+      font-family: inherit;
+    }
+    #body-input::placeholder { color: var(--text-3); }
+
+    #status-bar {
+      padding: 7px 24px;
+      border-top: 0.5px solid var(--border);
+      font-size: 11px;
+      color: var(--text-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sync-ok { color: var(--accent); }
+    .sync-ing { color: var(--warn); }
+    .sync-err { color: var(--danger); }
+
+    .empty-list { padding: 14px 14px; font-size: 12px; color: var(--text-3); }
+    .no-note { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 13px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">共有<span>メモ</span></div>
+  </div>
+  <div class="user-row">
+    <div class="user-dot"></div>
+    <input id="username-input" type="text" placeholder="名前を入力..." maxlength="12" />
+  </div>
+</header>
+
+<div id="main">
+  <div id="sidebar">
+    <div id="search-wrap">
+      <input id="search" type="text" placeholder="メモを検索..." oninput="filterNotes(this.value)" />
+    </div>
+    <button id="new-btn" onclick="newNote()">＋ 新しいメモ</button>
+    <div id="note-list"><div class="empty-list">読み込み中...</div></div>
+  </div>
+
+  <div id="editor">
+    <div id="editor-top">
+      <input id="title-input" type="text" placeholder="タイトルを入力..." oninput="onTitleInput(this.value)" />
+      <button id="delete-btn" onclick="deleteNote()">削除</button>
+    </div>
+    <textarea id="body-input" placeholder="ここにメモを書いてください..." oninput="onBodyInput(this.value)"></textarea>
+    <div id="status-bar">
+      <span id="char-count"></span>
+      <span id="sync-indicator" class="sync-ok"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────
+  let notes = [];
+  let currentId = null;
+  let username = 'ゲスト';
+  let query = '';
+  let saveTimer = null;
+  let pollTimer = null;
+
+  // ── Storage helpers (localStorage) ────────────────────────────────────
+  const INDEX_KEY = 'shared-memo-index';
+
+  function noteKey(id) { return 'shared-memo-note-' + id; }
+
+  function loadIndex() {
+    try { return JSON.parse(localStorage.getItem(INDEX_KEY) || '[]'); } catch { return []; }
+  }
+
+  function saveIndex(ids) {
+    localStorage.setItem(INDEX_KEY, JSON.stringify(ids));
+  }
+
+  function loadNote(id) {
+    try {
+      const raw = localStorage.getItem(noteKey(id));
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  function saveNoteLocal(note) {
+    localStorage.setItem(noteKey(note.id), JSON.stringify(note));
+  }
+
+  function deleteNoteLocal(id) {
+    localStorage.removeItem(noteKey(id));
+    saveIndex(loadIndex().filter(i => i !== id));
+  }
+
+  function loadAllNotes() {
+    return loadIndex().map(loadNote).filter(Boolean).sort((a, b) => b.updated - a.updated);
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────
+  function nowStr() {
+    return new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function escHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function setSync(state, text) {
+    const el = document.getElementById('sync-indicator');
+    el.className = 'sync-' + state;
+    el.textContent = text;
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────
+  function renderList() {
+    const list = document.getElementById('note-list');
+    const filtered = notes.filter(n =>
+      (n.title || '').includes(query) || (n.body || '').includes(query)
+    );
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-list">メモがありません</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(n => `
+      <div class="note-item ${n.id === currentId ? 'active' : ''}" onclick="selectNote('${n.id}')">
+        <div class="note-title-li">${escHtml(n.title) || '無題'}</div>
+        <div class="note-meta">
+          <span>${escHtml(n.lastEditor) || ''}</span>
+          <span>${n.dateStr || ''}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function loadEditor(note) {
+    const titleEl = document.getElementById('title-input');
+    const bodyEl = document.getElementById('body-input');
+    if (!note) { titleEl.value = ''; bodyEl.value = ''; document.getElementById('char-count').textContent = ''; return; }
+    titleEl.value = note.title || '';
+    bodyEl.value = note.body || '';
+    document.getElementById('char-count').textContent = (note.body || '').length + ' 文字';
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────────
+  function selectNote(id) {
+    currentId = id;
+    renderList();
+    loadEditor(notes.find(n => n.id === id) || null);
+  }
+
+  function newNote() {
+    const id = 'n-' + Date.now();
+    const note = { id, title: '', body: '', lastEditor: username, dateStr: nowStr(), updated: Date.now() };
+    const ids = loadIndex();
+    ids.unshift(id);
+    saveIndex(ids);
+    saveNoteLocal(note);
+    notes.unshift(note);
+    currentId = id;
+    renderList();
+    loadEditor(note);
+    document.getElementById('title-input').focus();
+    setSync('ok', '保存済み');
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    setSync('ing', '保存中...');
+    saveTimer = setTimeout(() => {
+      const note = notes.find(n => n.id === currentId);
+      if (!note) return;
+      try {
+        saveNoteLocal(note);
+        setSync('ok', '保存済み');
+      } catch {
+        setSync('err', '保存失敗');
+      }
+    }, 600);
+  }
+
+  function onTitleInput(v) {
+    const note = notes.find(n => n.id === currentId);
+    if (!note) return;
+    note.title = v;
+    note.lastEditor = username;
+    note.dateStr = nowStr();
+    note.updated = Date.now();
+    renderList();
+    scheduleSave();
+  }
+
+  function onBodyInput(v) {
+    const note = notes.find(n => n.id === currentId);
+    if (!note) return;
+    note.body = v;
+    note.lastEditor = username;
+    note.dateStr = nowStr();
+    note.updated = Date.now();
+    document.getElementById('char-count').textContent = v.length + ' 文字';
+    renderList();
+    scheduleSave();
+  }
+
+  function deleteNote() {
+    if (!currentId) return;
+    if (!confirm('このメモを削除しますか？')) return;
+    deleteNoteLocal(currentId);
+    notes = notes.filter(n => n.id !== currentId);
+    currentId = notes.length ? notes[0].id : null;
+    renderList();
+    loadEditor(notes.find(n => n.id === currentId) || null);
+    setSync('ok', '削除しました');
+  }
+
+  function filterNotes(v) {
+    query = v;
+    renderList();
+  }
+
+  // ── Polling (同タブ間同期 / 将来のサーバー連携用) ──────────────────────
+  function poll() {
+    const fresh = loadAllNotes();
+    notes = fresh;
+    renderList();
+    // 現在のメモが外部更新されていたらエディタも更新
+    if (currentId) {
+      const updated = fresh.find(n => n.id === currentId);
+      if (updated) {
+        const bodyEl = document.getElementById('body-input');
+        const titleEl = document.getElementById('title-input');
+        if (bodyEl !== document.activeElement && bodyEl.value !== updated.body) {
+          bodyEl.value = updated.body;
+          document.getElementById('char-count').textContent = (updated.body || '').length + ' 文字';
+        }
+        if (titleEl !== document.activeElement && titleEl.value !== updated.title) {
+          titleEl.value = updated.title;
+        }
+      }
+    }
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  function init() {
+    setSync('ing', '起動中...');
+
+    document.getElementById('username-input').addEventListener('input', e => {
+      username = e.target.value.trim() || 'ゲスト';
+    });
+
+    notes = loadAllNotes();
+
+    if (notes.length === 0) {
+      const id = 'n-welcome';
+      const note = {
+        id,
+        title: 'ようこそ！',
+        body: 'このメモは共有されています。\n複数の人が同時に編集できます。\n名前を入力して、一緒に使ってみましょう！',
+        lastEditor: 'システム',
+        dateStr: nowStr(),
+        updated: Date.now()
+      };
+      saveIndex([id]);
+      saveNoteLocal(note);
+      notes = [note];
+    }
+
+    currentId = notes[0].id;
+    renderList();
+    loadEditor(notes[0]);
+    setSync('ok', '準備完了');
+
+    pollTimer = setInterval(poll, 3000);
+  }
+
+  init();
+</script>
+</body>
+</html>
